@@ -56,7 +56,7 @@ services:
     environment:
       ZBX_HOSTNAME: "Zabbix server"
       ZBX_SERVER_HOST: zabbix-server
-      ZBX_SERVER_PORT: '10051'
+      ZBX_SERVER_PORT: '100510'
       ZBX_SERVER_ACTIVE: zabbix-server
 
 volumes:
