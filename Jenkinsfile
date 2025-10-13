@@ -32,7 +32,37 @@ pipeline {
                 '''
             }
         }
+stage('User Confirmation') {
+            steps {
+                script {
+                    // Ask user to continue
+                    def userInput = input(
+                        id: 'Proceed', message: 'Do you want to continue?', parameters: [
+                            [$class: 'BooleanParameterDefinition', defaultValue: true, description: '', name: 'Yes/No']
+                        ]
+                    )
+                    if (userInput) {
+                        echo "User chose YES. Proceeding..."
+                        // Add steps to run if Yes
+                    } else {
+                        echo "User chose NO. Stopping..."
+                        // Optionally abort
+                        currentBuild.result = 'ABORTED'
+                        error("Build aborted by user")
+                    }
+                }
+            }
+        }
 
+        stage('Next Step') {
+            when {
+                expression { return currentBuild.result != 'ABORTED' }
+            }
+            steps {
+                echo "Running next stage..."
+            }
+        }
+    }
         stage('Verify Deployment') {
             steps {
                 echo '🔹 Checking running containers...'
