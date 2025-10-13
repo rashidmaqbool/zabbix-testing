@@ -8,7 +8,7 @@ pipeline {
         // Since it's a public repo, no credentials needed
         checkout([$class: 'GitSCM',
                   branches: [[name: '*/main']],
-                  userRemoteConfigs: [[url: 'https://github.com/<your-username>/<your-repo>.git']]
+                  userRemoteConfigs: [[url: 'https://github.com/rashidmaqbool/zabbix-testing.git']]
         ])
       }
     }
@@ -45,3 +45,4 @@ pipeline {
     }
   }
 }
+
