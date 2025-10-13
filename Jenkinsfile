@@ -1,48 +1,55 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-    stage('Checkout') {
-      steps {
-        echo '🔹 Cloning public GitHub repository...'
-        // Since it's a public repo, no credentials needed
-        checkout([$class: 'GitSCM',
-                  branches: [[name: '*/main']],
-                  userRemoteConfigs: [[url: 'https://github.com/rashidmaqbool/zabbix-testing.git']]
-        ])
-      }
+    environment {
+        COMPOSE_PATH = "${WORKSPACE}"
     }
 
-    stage('Pull Docker Images') {
-      steps {
-        echo '🔹 Pulling latest Zabbix images...'
-        sh 'docker compose pull || true'
-      }
+    stages {
+        stage('Prepare Environment') {
+            steps {
+                echo '🔹 Using checked-out workspace...'
+                sh 'ls -l'
+            }
+        }
+
+        stage('Pull Docker Images') {
+            steps {
+                echo '🔹 Pulling latest Zabbix Docker images...'
+                sh '''
+                cd ${COMPOSE_PATH}
+                docker compose pull || true
+                '''
+            }
+        }
+
+        stage('Deploy Zabbix Stack') {
+            steps {
+                echo '🔹 Starting Zabbix stack using Docker Compose...'
+                sh '''
+                cd ${COMPOSE_PATH}
+                docker compose up -d
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo '🔹 Checking running containers...'
+                sh '''
+                docker ps --filter "name=zabbix" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                '''
+            }
+        }
     }
 
-    stage('Deploy Zabbix Stack') {
-      steps {
-        echo '🔹 Deploying Zabbix stack...'
-        sh 'docker compose up -d'
-      }
+    post {
+        success {
+            echo '✅ Zabbix successfully deployed!'
+            echo 'Access the web interface at: http://<your-server-ip>:8080'
+        }
+        failure {
+            echo '❌ Deployment failed — please check the Jenkins console logs for details.'
+        }
     }
-
-    stage('Verify Deployment') {
-      steps {
-        echo '🔹 Verifying running containers...'
-        sh 'docker ps --format "table {{.Names}}\t{{.Status}}"'
-      }
-    }
-  }
-
-  post {
-    success {
-      echo '✅ Zabbix successfully deployed!'
-      echo 'Access web interface at: http://<server-ip>:8080'
-    }
-    failure {
-      echo '❌ Deployment failed. Check the Jenkins console for logs.'
-    }
-  }
 }
-
