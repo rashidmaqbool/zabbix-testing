@@ -45,7 +45,7 @@ pipeline {
 
     post {
         success {
-            echo '✅ Zabbix successfully deployed!'
+            echo '✅ Zabbix successfully deployed! Welldone Rashid you done it'
             echo 'Access the web interface at: http://<your-server-ip>:8080'
         }
         failure {
