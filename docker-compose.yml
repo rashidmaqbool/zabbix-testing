@@ -3,7 +3,7 @@ version: '3.8'
 services:
   jenkins:
     image: jenkins/jenkins:lts
-    container_name: jenkins
+    container_name: zabbix_jenkins
     privileged: true
     user: root          # ✅ important: run as root inside container
     ports:
