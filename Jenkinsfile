@@ -11,24 +11,24 @@ pipeline {
                 script {
                     // Ask user to continue
                     def proceed = input(
-                        id: 'Proceed', message: 'Do you want to deploy Zabbix?', parameters: [
+                        id: 'Proceed', 
+                        message: 'Do you want to deploy Zabbix?', 
+                        parameters: [
                             [$class: 'BooleanParameterDefinition', defaultValue: true, description: 'Check YES to proceed', name: 'Yes/No']
                         ]
                     )
 
                     if (!proceed) {
-                        echo "User chose NO. Aborting pipeline..."
-                        currentBuild.result = 'ABORTED'
-                        error("Build aborted by user")
+                        // Abort pipeline immediately
+                        error("⚠️ Deployment aborted by user")
                     } else {
-                        echo "User chose YES. Proceeding with deployment..."
+                        echo "✅ User chose YES. Proceeding with deployment..."
                     }
                 }
             }
         }
 
         stage('Prepare Environment') {
-            when { expression { currentBuild.result != 'ABORTED' } }
             steps {
                 echo '🔹 Using checked-out workspace...'
                 sh 'ls -l'
@@ -36,7 +36,6 @@ pipeline {
         }
 
         stage('Pull Docker Images') {
-            when { expression { currentBuild.result != 'ABORTED' } }
             steps {
                 echo '🔹 Pulling latest Zabbix Docker images...'
                 sh '''
@@ -47,7 +46,6 @@ pipeline {
         }
 
         stage('Deploy Zabbix Stack') {
-            when { expression { currentBuild.result != 'ABORTED' } }
             steps {
                 echo '🔹 Starting Zabbix stack using Docker Compose...'
                 sh '''
@@ -58,7 +56,6 @@ pipeline {
         }
 
         stage('Verify Deployment') {
-            when { expression { currentBuild.result != 'ABORTED' } }
             steps {
                 echo '🔹 Checking running containers...'
                 sh '''
