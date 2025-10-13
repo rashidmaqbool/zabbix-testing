@@ -64,4 +64,4 @@ volumes:
   zabbix-server-data:
   zabbix-snmptraps-data:
   zabbix-export-data:
-  zabbix-web-data:
+  zabbix-web-data:jjgi
