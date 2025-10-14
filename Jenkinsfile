@@ -7,9 +7,10 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
+
+        stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/yourusername/miko-pbx.git'
+                git branch: 'main', url: 'https://<your_token>@github.com/<your_username>/<your_repo>.git'
             }
         }
 
@@ -17,18 +18,23 @@ pipeline {
             steps {
                 script {
                     sh '''
+                    echo "🛠 Preparing environment..."
+
                     # Detect current user and group
-                    export ID_WWW_USER=$(id -u)
-                    export ID_WWW_GROUP=$(id -g)
-                    
-                    # Generate fresh .env file
-                    echo "ID_WWW_USER=$ID_WWW_USER" > .env
-                    echo "ID_WWW_GROUP=$ID_WWW_GROUP" >> .env
-                    echo "PBX_NAME=MikoPBX-in-Docker" >> .env
-                    echo "SSH_PORT=23" >> .env
-                    echo "WEB_PORT=8080" >> .env
-                    echo "WEB_HTTPS_PORT=8443" >> .env
-                    
+                    ID_WWW_USER=$(id -u)
+                    ID_WWW_GROUP=$(id -g)
+
+                    # Generate .env file
+                    cat <<EOF > .env
+                    ID_WWW_USER=$ID_WWW_USER
+                    ID_WWW_GROUP=$ID_WWW_GROUP
+                    PBX_NAME=MikoPBX-in-Docker
+                    SSH_PORT=23
+                    WEB_PORT=8080
+                    WEB_HTTPS_PORT=8443
+                    EOF
+
+                    echo "✅ Generated .env file:"
                     cat .env
                     '''
                 }
@@ -37,18 +43,20 @@ pipeline {
 
         stage('Deploy MikoPBX') {
             steps {
-                sh '''
-                echo "🧩 Bringing up MikoPBX container..."
-                docker compose down || true
-                docker compose up -d
-                '''
+                script {
+                    sh '''
+                    echo "🚀 Deploying MikoPBX..."
+                    docker compose down || true
+                    docker compose up -d
+                    '''
+                }
             }
         }
 
         stage('Verify Deployment') {
             steps {
                 sh '''
-                echo "🔍 Verifying MikoPBX container status..."
+                echo "🔍 Verifying MikoPBX container..."
                 docker ps --filter "name=mikopbx"
                 '''
             }
