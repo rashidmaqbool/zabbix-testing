@@ -2,54 +2,44 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_PATH = "${WORKSPACE}"
+        COMPOSE_FILE = "docker-compose.yml"
+        ENV_FILE = ".env"
     }
 
     stages {
-        stage('User Confirmation') {
+        stage('Checkout Code') {
             steps {
-                script {
-                    // Ask user to continue
-                    def proceed = input(
-                        id: 'Proceed', 
-                        message: 'Do you want to deploy Zabbix?', 
-                        parameters: [
-                            [$class: 'BooleanParameterDefinition', defaultValue: true, description: 'Check YES to proceed', name: 'Yes/No']
-                        ]
-                    )
-
-                    if (!proceed) {
-                        // Abort pipeline immediately
-                        error("⚠️ Deployment aborted by user")
-                    } else {
-                        echo "✅ User chose YES. Proceeding with deployment..."
-                    }
-                }
+                git branch: 'main', url: 'https://github.com/yourusername/miko-pbx.git'
             }
         }
 
         stage('Prepare Environment') {
             steps {
-                echo '🔹 Using checked-out workspace...'
-                sh 'ls -l'
+                script {
+                    sh '''
+                    # Detect current user and group
+                    export ID_WWW_USER=$(id -u)
+                    export ID_WWW_GROUP=$(id -g)
+                    
+                    # Generate fresh .env file
+                    echo "ID_WWW_USER=$ID_WWW_USER" > .env
+                    echo "ID_WWW_GROUP=$ID_WWW_GROUP" >> .env
+                    echo "PBX_NAME=MikoPBX-in-Docker" >> .env
+                    echo "SSH_PORT=23" >> .env
+                    echo "WEB_PORT=8080" >> .env
+                    echo "WEB_HTTPS_PORT=8443" >> .env
+                    
+                    cat .env
+                    '''
+                }
             }
         }
 
-        stage('Pull Docker Images') {
+        stage('Deploy MikoPBX') {
             steps {
-                echo '🔹 Pulling latest Zabbix Docker images...'
                 sh '''
-                cd ${COMPOSE_PATH}
-                docker compose pull || true
-                '''
-            }
-        }
-
-        stage('Deploy Zabbix Stack') {
-            steps {
-                echo '🔹 Starting Zabbix stack using Docker Compose...'
-                sh '''
-                cd ${COMPOSE_PATH}
+                echo "🧩 Bringing up MikoPBX container..."
+                docker compose down || true
                 docker compose up -d
                 '''
             }
@@ -57,9 +47,9 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                echo '🔹 Checking running containers...'
                 sh '''
-                docker ps --filter "name=zabbix" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+                echo "🔍 Verifying MikoPBX container status..."
+                docker ps --filter "name=mikopbx"
                 '''
             }
         }
@@ -67,14 +57,11 @@ pipeline {
 
     post {
         success {
-            echo '✅ Zabbix successfully deployed! Well done, Rashid!'
-            echo 'Access the web interface at: http://<your-server-ip>:8080'
+            echo "✅ MikoPBX deployed successfully!"
+            echo "Access it at: https://<your_host_ip>:8443"
         }
         failure {
-            echo '❌ Deployment failed — please check the Jenkins console logs for details.'
-        }
-        aborted {
-            echo '⚠️ Deployment aborted by user.'
+            echo "❌ Deployment failed. Check Jenkins console logs."
         }
     }
 }
