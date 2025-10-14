@@ -43,7 +43,7 @@ services:
       ZBX_SERVER_HOST: zabbix-server
       PHP_TZ: ${PHP_TZ}
     ports:
-      - "8080:8080"   # Changed to a fixed port to avoid conflicts
+      - "8081:8080"   # Changed to a fixed port to avoid conflicts
     volumes:
       - zabbix-web-data:/usr/share/zabbix
 
