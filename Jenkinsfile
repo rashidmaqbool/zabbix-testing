@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     COMPOSE_PROJECT_NAME = 'mikopbx'
-    // If you store DB password in Jenkins Credentials, uncomment and set credentialsId
+    // Uncomment if you want to pull DB password from Jenkins credentials:
     // DB_PASSWORD = credentials('jenkins-db-password-id')
   }
 
@@ -16,49 +16,54 @@ pipeline {
 
     stage('Prepare .env') {
       steps {
-        // If .env is not committed, copy example -> .env
-        sh '''
-        if [ ! -f .env ]; then
-          if [ -f .env.example ]; then
-            cp .env.example .env
-            echo ".env created from .env.example. Please ensure secrets are set."
+        script {
+          // Safely generate or validate .env file
+          sh '''
+          if [ ! -f .env ]; then
+            echo "No .env found — generating a new one..."
+            cat > .env <<EOF
+PUID=1001
+PGID=1001
+TZ=Asia/Karachi
+MIKO_IMAGE=mikopbx:latest
+DB_IMAGE=postgres:14
+DB_HOST=db
+DB_PORT=5432
+DB_USER=mikopbx
+DB_PASSWORD=StrongPassword123
+DB_NAME=mikopbx
+WEB_PORT=8080
+SIP_PORT=5060
+RTP_START=10000
+RTP_END=20000
+COMPOSE_PROJECT_NAME=mikopbx
+EOF
+            echo ".env file created successfully."
           else
-            echo "ERROR: .env.example missing. Create .env or .env.example."
-            exit 1
+            echo ".env already exists. Skipping creation."
           fi
-        else
-          echo ".env already present"
-        fi
-        '''
+          '''
 
-        // Ensure host volume permissions (PUID/PGID values used in .env)
-        sh '''
-        # read PUID/PGID from .env (fallback to 1001 if not set)
-        PUID=$(grep -E '^PUID=' .env | cut -d '=' -f2 || echo 1001)
-        PGID=$(grep -E '^PGID=' .env | cut -d '=' -f2 || echo 1001)
-        echo "Using PUID=$PUID PGID=$PGID for host directories"
-        sudo mkdir -p /var/spool/mikopbx/cf /var/spool/mikopbx/storage || true
-        sudo chown -R ${PUID}:${PGID} /var/spool/mikopbx || true
-        '''
+          // Ensure host directories exist and permissions are correct
+          sh '''
+          PUID=$(grep -E '^PUID=' .env | cut -d '=' -f2 || echo 1001)
+          PGID=$(grep -E '^PGID=' .env | cut -d '=' -f2 || echo 1001)
+          echo "Ensuring directories exist with correct ownership..."
+          sudo mkdir -p /var/spool/mikopbx/cf /var/spool/mikopbx/storage || true
+          sudo chown -R ${PUID}:${PGID} /var/spool/mikopbx || true
+          '''
+        }
       }
     }
 
     stage('Deploy') {
       steps {
-        // Use docker compose in workspace
         sh '''
-        # Pull images (optional)
+        echo "🚀 Deploying MikoPBX..."
         docker compose pull || true
-
-        # Teardown old containers and bring up new ones
         docker compose down --remove-orphans || true
         docker compose up -d
-        '''
-
-        // Wait & show basic status
-        sh '''
-        echo "Waiting 5s for containers to initialize..."
-        sleep 5
+        echo "✅ Deployment complete."
         docker compose ps
         '''
       }
@@ -66,15 +71,14 @@ pipeline {
 
     stage('Smoke Test (optional)') {
       steps {
-        // Simple check to show logs if something failed
         sh '''
-        # check if mikopbx container is running
+        echo "Checking if mikopbx container is running..."
         if [ "$(docker ps -q -f name=mikopbx)" = "" ]; then
-          echo "mikopbx container not running. Dumping logs..."
+          echo "❌ mikopbx container not running. Dumping logs..."
           docker compose logs --no-color --tail=200
           exit 1
         else
-          echo "mikopbx is running."
+          echo "✅ mikopbx is running successfully."
         fi
         '''
       }
@@ -83,10 +87,10 @@ pipeline {
 
   post {
     success {
-      echo 'Deployment succeeded.'
+      echo '✅ Deployment succeeded!'
     }
     failure {
-      echo 'Deployment failed. See console output & container logs.'
+      echo '❌ Deployment failed. See console logs for details.'
     }
   }
 }
