@@ -2,65 +2,73 @@ pipeline {
   agent any
 
   environment {
-    COMPOSE_PROJECT_NAME = 'zabbix'
+    COMPOSE_PROJECT_NAME = 'mikopbx'
   }
 
   stages {
+
     stage('Checkout') {
       steps {
+        echo "📦 Checking out source..."
         checkout scm
       }
     }
 
-    stage('Clean and Generate .env') {
+    stage('Prepare .env') {
       steps {
+        echo "⚙️ Preparing .env file..."
         sh '''
-        echo "🧹 Cleaning any previous .env file..."
-        rm -f .env
-
-        echo "📝 Generating fresh .env file for Zabbix..."
-        cat > .env <<EOF
-POSTGRES_USER=zabbix
-POSTGRES_PASSWORD=zabbix_pass
-POSTGRES_DB=zabbix
-MYSQL_USER=zabbix
-MYSQL_PASSWORD=zabbix_pass
-MYSQL_ROOT_PASSWORD=root_pass
-DB_SERVER_HOST=mysql-server
-DB_SERVER_PORT=3306
-ZBX_SERVER_NAME=MyZabbix
+          # If .env doesn’t exist, create a new clean one
+          if [ ! -f .env ]; then
+            echo "Creating fresh .env file..."
+            cat <<EOF > .env
+ID_WWW_USER=0
+ID_WWW_GROUP=0
+PROJECT_NAME=Zabbix-in-Docker
+DB_PORT=5432
+WEB_PORT=8080
 EOF
+          fi
 
-        echo "✅ .env file generated successfully."
-        echo "Content of .env:"
-        cat .env
+          # Remove any invalid lines (just in case)
+          sed -i '/^$/d' .env                # Remove empty lines
+          sed -i '/^#/d' .env                # Remove comments
+          sed -i '/echo/d' .env              # Remove echo lines
+          sed -i '/EOF/d' .env               # Remove stray EOF
+          sed -i '/cat/d' .env               # Remove cat commands
+
+          echo "✅ Cleaned .env file:"
+          cat .env
         '''
       }
     }
 
-    stage('Deploy Zabbix') {
+    stage('Deploy') {
       steps {
-        sh '''
         echo "🚀 Deploying Zabbix..."
-        docker compose down || true
-        docker compose up -d
-        echo "✅ Deployment complete."
-        docker compose ps
+        sh '''
+          docker compose pull || true
+          docker compose down --remove-orphans || true
+          docker compose up -d
+
+          echo "⏳ Waiting 5 seconds for containers to initialize..."
+          sleep 5
+          docker compose ps
         '''
       }
     }
 
-    stage('Verify Containers') {
+    stage('Health Check') {
       steps {
+        echo "🩺 Checking if container is running..."
         sh '''
-        echo "🔍 Checking Zabbix container status..."
-        if [ "$(docker ps -q -f name=zabbix)" = "" ]; then
-          echo "❌ Zabbix container not running. Dumping logs..."
-          docker compose logs --no-color --tail=200
-          exit 1
-        else
-          echo "✅ Zabbix is running successfully!"
-        fi
+          if [ "$(docker ps -q -f name=zabbix)" = "" ]; then
+            echo "❌ Zabbix container not running. Dumping logs..."
+            docker compose logs --no-color --tail=100
+            exit 1
+          else
+            echo "✅ Zabbix container is running successfully."
+          fi
         '''
       }
     }
@@ -68,10 +76,10 @@ EOF
 
   post {
     success {
-      echo '✅ Jenkins pipeline completed successfully!'
+      echo '🎉 Deployment succeeded!'
     }
     failure {
-      echo '❌ Jenkins pipeline failed. Check console output for details.'
+      echo '❌ Deployment failed! Check Jenkins logs and Docker Compose output.'
     }
   }
 }
