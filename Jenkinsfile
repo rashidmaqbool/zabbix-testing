@@ -10,7 +10,8 @@ pipeline {
 
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://<your_token>@github.com/<your_username>/<your_repo>.git'
+                echo "📦 Cloning private GitHub repository..."
+                git branch: 'main', url: 'https://github.com/rashidmaqbool/zabbix-testing.git'
             }
         }
 
@@ -28,10 +29,9 @@ pipeline {
                     cat <<EOF > .env
                     ID_WWW_USER=$ID_WWW_USER
                     ID_WWW_GROUP=$ID_WWW_GROUP
-                    PBX_NAME=MikoPBX-in-Docker
-                    SSH_PORT=23
+                    PROJECT_NAME=Zabbix-in-Docker
+                    DB_PORT=5432
                     WEB_PORT=8080
-                    WEB_HTTPS_PORT=8443
                     EOF
 
                     echo "✅ Generated .env file:"
@@ -41,11 +41,11 @@ pipeline {
             }
         }
 
-        stage('Deploy MikoPBX') {
+        stage('Deploy Zabbix') {
             steps {
                 script {
                     sh '''
-                    echo "🚀 Deploying MikoPBX..."
+                    echo "🚀 Deploying Zabbix..."
                     docker compose down || true
                     docker compose up -d
                     '''
@@ -56,8 +56,8 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                echo "🔍 Verifying MikoPBX container..."
-                docker ps --filter "name=mikopbx"
+                echo "🔍 Verifying Zabbix container..."
+                docker ps --filter "name=zabbix"
                 '''
             }
         }
@@ -65,8 +65,11 @@ pipeline {
 
     post {
         success {
-            echo "✅ MikoPBX deployed successfully!"
-            echo "Access it at: https://<your_host_ip>:8443"
+            script {
+                def ip = sh(script: "hostname -I | awk '{print \$1}'", returnStdout: true).trim()
+                echo "✅ Zabbix deployed successfully!"
+                echo "Access it at: http://${ip}:8080"
+            }
         }
         failure {
             echo "❌ Deployment failed. Check Jenkins console logs."
