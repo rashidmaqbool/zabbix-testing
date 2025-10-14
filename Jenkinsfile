@@ -10,8 +10,10 @@ pipeline {
 
         stage('Clone Repository') {
             steps {
-                echo "📦 Cloning private GitHub repository..."
-                git branch: 'main', url: 'https://github.com/rashidmaqbool/zabbix-testing.git'
+                echo "📦 Cloning private GitHub repository using Jenkins credentials..."
+                withCredentials([string(credentialsId: 'github_token', variable: 'GITHUB_TOKEN')]) {
+                    git branch: 'main', url: "https://${GITHUB_TOKEN}@github.com/rashidmaqbool/zabbix-testing.git"
+                }
             }
         }
 
@@ -21,11 +23,9 @@ pipeline {
                     sh '''
                     echo "🛠 Preparing environment..."
 
-                    # Detect current user and group
                     ID_WWW_USER=$(id -u)
                     ID_WWW_GROUP=$(id -g)
 
-                    # Generate .env file
                     cat <<EOF > .env
                     ID_WWW_USER=$ID_WWW_USER
                     ID_WWW_GROUP=$ID_WWW_GROUP
