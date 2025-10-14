@@ -8,15 +8,6 @@ pipeline {
 
     stages {
 
-        stage('Clone Repository') {
-            steps {
-                echo "📦 Cloning private GitHub repository using Jenkins credentials..."
-                withCredentials([string(credentialsId: 'github_token', variable: 'GITHUB_TOKEN')]) {
-                    git branch: 'main', url: "https://${GITHUB_TOKEN}@github.com/rashidmaqbool/zabbix-testing.git"
-                }
-            }
-        }
-
         stage('Prepare Environment') {
             steps {
                 script {
