@@ -1,40 +1,59 @@
-services:
-  db:
-    image: postgres:15
-    container_name: mikopbx_db
-    environment:
-      - POSTGRES_USER=${DB_USER:-mikouser}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-mikopass}
-      - POSTGRES_DB=${DB_NAME:-mikodb}
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    restart: unless-stopped
+version: "3.8"
 
-  mikopbx:
-    image: mikopbx/mikopbx:latest
-    container_name: mikopbx_app
-    depends_on:
-      - db
-    ports:
-      - "${WEB_PORT:-808}:80"
-      - "${SIP_PORT:-5060}:${SIP_PORT:-5060}/udp"
-      - "${SIP_PORT:-5060}:${SIP_PORT:-5060}/tcp"
-      - "${RTP_START:-20000}-${RTP_END:-21000}:${RTP_START:-20000}-${RTP_END:-21000}/udp"
-    environment:
-      - TZ=${TZ:-Asia/Karachi}
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=${DB_USER:-mikouser}
-      - DB_PASSWORD=${DB_PASSWORD:-mikopass}
-      - DB_NAME=${DB_NAME:-mikodb}
+services:
+  mikopbx-first:
+    container_name: "mikopbx-first"
+    image: "ghcr.io/mikopbx/mikopbx-x86-64"
+    entrypoint: "/sbin/docker-entrypoint"
+    hostname: "mikopbx-in-docker-first"
     volumes:
-      - /var/spool/mikopbx/cf:/var/spool/mikopbx/cf
-      - /var/spool/mikopbx/storage:/var/spool/mikopbx/storage
+      - ./first/cf:/cf
+      - ./first/storage:/storage
+    tty: true
     cap_add:
       - NET_ADMIN
-    restart: unless-stopped
+    environment:
+      - ID_WWW_USER=${ID_WWW_USER}
+      - ID_WWW_GROUP=${ID_WWW_GROUP}
+      - PBX_NAME=${PBX_NAME_FIRST}
+      - RTP_PORT_FROM=${RTP_PORT_FROM_FIRST}
+      - RTP_PORT_TO=${RTP_PORT_TO_FIRST}
+      - WEB_ADMIN_LOGIN=${WEB_ADMIN_LOGIN_FIRST}
+      - WEB_ADMIN_PASSWORD=${WEB_ADMIN_PASSWORD_FIRST}
+      - ENABLE_USE_NAT=${ENABLE_USE_NAT_FIRST}
+      - PBX_FIREWALL_ENABLED=${PBX_FIREWALL_ENABLED_FIRST}
+      - PBX_FAIL2BAN_ENABLED=${PBX_FAIL2BAN_ENABLED_FIRST}
+    ports:
+      - "${WEB_HTTPS_PORT_FIRST}:443"
+      - "${SIP_PORT_FIRST}:5060/udp"
 
-volumes:
-  db-data:
+  mikopbx-second:
+    container_name: "mikopbx-second"
+    image: "ghcr.io/mikopbx/mikopbx-x86-64"
+    entrypoint: "/sbin/docker-entrypoint"
+    hostname: "mikopbx-in-docker-second"
+    volumes:
+      - ./second/cf:/cf
+      - ./second/storage:/storage
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - ID_WWW_USER=${ID_WWW_USER}
+      - ID_WWW_GROUP=${ID_WWW_GROUP}
+      - PBX_NAME=${PBX_NAME_SECOND}
+      - RTP_PORT_FROM=${RTP_PORT_FROM_SECOND}
+      - RTP_PORT_TO=${RTP_PORT_TO_SECOND}
+      - WEB_ADMIN_LOGIN=${WEB_ADMIN_LOGIN_SECOND}
+      - WEB_ADMIN_PASSWORD=${WEB_ADMIN_PASSWORD_SECOND}
+      - ENABLE_USE_NAT=${ENABLE_USE_NAT_SECOND}
+      - PBX_FIREWALL_ENABLED=${PBX_FIREWALL_ENABLED_SECOND}
+      - PBX_FAIL2BAN_ENABLED=${PBX_FAIL2BAN_ENABLED_SECOND}
+      - EXTERNAL_SIP_PORT=${EXTERNAL_SIP_PORT_SECOND}
+    ports:
+      - "${WEB_HTTPS_PORT_SECOND}:443"
+      - "${SIP_PORT_SECOND}:5060/udp"
+
+networks:
+  default:
+    driver: bridge
