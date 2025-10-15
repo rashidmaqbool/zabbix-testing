@@ -1,33 +1,65 @@
-version: "3.8"
+x-project-name: mikopbx
 
 services:
-  mikopbx:
-    container_name: "mikopbx"
+  mikopbx-first:
+    container_name: "mikopbx-first"
     image: "ghcr.io/mikopbx/mikopbx-x86-64"
     entrypoint: "/sbin/docker-entrypoint"
-    hostname: "mikopbx-in-docker"
+    hostname: "mikopbx-in-docker-first"
     volumes:
-      - ./cf:/cf
-      - ./storage:/storage
+      - ./first/cf:/cf
+      - ./first/storage:/storage
     tty: true
     cap_add:
       - NET_ADMIN
+    networks:
+      - network-bridge1
     environment:
       - ID_WWW_USER=${ID_WWW_USER}
       - ID_WWW_GROUP=${ID_WWW_GROUP}
-      - PBX_NAME=${PBX_NAME}
-      - RTP_PORT_FROM=${RTP_PORT_FROM}
-      - RTP_PORT_TO=${RTP_PORT_TO}
-      - WEB_ADMIN_LOGIN=${WEB_ADMIN_LOGIN}
-      - WEB_ADMIN_PASSWORD=${WEB_ADMIN_PASSWORD}
-      - ENABLE_USE_NAT=${ENABLE_USE_NAT}
-      - PBX_FIREWALL_ENABLED=${PBX_FIREWALL_ENABLED}
-      - PBX_FAIL2BAN_ENABLED=${PBX_FAIL2BAN_ENABLED}
-      - EXTERNAL_SIP_PORT=${EXTERNAL_SIP_PORT}
+      - PBX_NAME=MikoPBXFirst
+      - RTP_PORT_FROM=10000
+      - RTP_PORT_TO=10800
+      - WEB_ADMIN_PASSWORD=mikopbx-first-password
+      - ENABLE_USE_NAT=1
+      - PBX_FIREWALL_ENABLED=1
+      - PBX_FAIL2BAN_ENABLED=1
     ports:
-      - "${WEB_HTTPS_PORT}:443"
-      - "${SIP_PORT}:5060/udp"
+      - "8443:443"
+      - "8080:80"
+      - "5060:5060/udp"
+
+  mikopbx-second:
+    container_name: "mikopbx-second"
+    image: "ghcr.io/mikopbx/mikopbx-x86-64"
+    entrypoint: "/sbin/docker-entrypoint"
+    hostname: "mikopbx-in-docker-second"
+    volumes:
+      - ./second/cf:/cf
+      - ./second/storage:/storage
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - network-bridge2
+    environment:
+      - ID_WWW_USER=${ID_WWW_USER}
+      - ID_WWW_GROUP=${ID_WWW_GROUP}
+      - PBX_NAME=MikoPBXSecond
+      - RTP_PORT_FROM=20000
+      - RTP_PORT_TO=20800
+      - EXTERNAL_SIP_PORT=6060
+      - WEB_ADMIN_PASSWORD=mikopbx-second-password
+      - ENABLE_USE_NAT=1
+      - PBX_FIREWALL_ENABLED=1
+      - PBX_FAIL2BAN_ENABLED=1
+    ports:
+      - "9443:443"
+      - "6060:5060/udp"
 
 networks:
-  default:
+  network-bridge1:
     driver: bridge
+  network-bridge2:
+    driver: bridge
+
