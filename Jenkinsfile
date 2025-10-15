@@ -12,8 +12,7 @@ pipeline {
                 echo "Cloning GitHub repository..."
                 git(
                     url: 'https://github.com/rashidmaqbool/zabbix-testing.git',
-                    branch: 'main',
-                    credentialsId: 'github-token'
+                    branch: 'main'
                 )
             }
         }
