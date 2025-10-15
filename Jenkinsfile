@@ -2,13 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Clone Repository') {
-            steps {
-                echo 'Cloning GitHub repository...'
-                // Jenkins will automatically use the token stored in credentials
-                git url: 'https://github.com/rashidmaqbool/mikopbx-docker.git', branch: 'main'
-            }
-        }
+    
 
         stage('Deploy MikoPBX Container') {
             steps {
