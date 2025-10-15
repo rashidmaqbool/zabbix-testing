@@ -2,52 +2,61 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'mikopbx:latest'
-        CONTAINER_NAME = 'MikoPBX'
+        MIKO_DIR = "C:/mikopbx"
+        GIT_REPO = "https://github.com/rashidmaqbool/zabbix-testing.git"
+        BRANCH = "main"
     }
 
     stages {
-        stage('Checkout Repository') {
+        stage('Prepare Directory') {
             steps {
-                echo "Cloning GitHub repository..."
-                git(
-                    url: 'https://github.com/rashidmaqbool/zabbix-testing.git',
-                    branch: 'main'
-                )
+                script {
+                    // Create mikopbx folder if it doesn't exist
+                    bat """
+                    if not exist "%MIKO_DIR%" mkdir "%MIKO_DIR%"
+                    """
+                }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Clone GitHub Repository') {
             steps {
-                echo "Building Docker image..."
-                sh "docker build -t ${DOCKER_IMAGE} ."
+                script {
+                    // Clone the repo into mikopbx folder or pull latest changes
+                    bat """
+                    cd "%MIKO_DIR%"
+                    if exist ".git" (
+                        echo Repository already exists. Pulling latest changes...
+                        git reset --hard
+                        git pull origin %BRANCH%
+                    ) else (
+                        git clone -b %BRANCH% %GIT_REPO% .
+                    )
+                    """
+                }
             }
         }
 
-        stage('Deploy MikoPBX Container') {
+        stage('Run Docker Compose') {
             steps {
-                echo "Deploying MikoPBX container..."
-                sh """
-                docker rm -f ${CONTAINER_NAME} || true
-                docker run -d --name ${CONTAINER_NAME} -p 8080:80 ${DOCKER_IMAGE}
-                """
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                echo "Verifying container is running..."
-                sh "docker ps | grep ${CONTAINER_NAME}"
+                script {
+                    // Start the MikoPBX container
+                    bat """
+                    cd "%MIKO_DIR%"
+                    docker compose down
+                    docker compose up -d
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Deployment successful!"
+            echo "MikoPBX Docker container is up and running!"
         }
         failure {
-            echo "Deployment failed. Check logs!"
+            echo "Pipeline failed. Check Jenkins logs for errors."
         }
     }
 }
