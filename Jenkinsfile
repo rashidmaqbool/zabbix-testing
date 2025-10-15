@@ -1,9 +1,8 @@
 pipeline {
   agent {
     docker {
-      // Use an image that already has Docker CLI and Compose installed
       image 'docker:27.1.1-dind'
-      args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
+      args '--privileged -v /var/run/docker.sock:/var/run/docker.sock -u root'
     }
   }
 
@@ -24,7 +23,6 @@ pipeline {
       steps {
         echo "⚙️ Preparing .env file..."
         sh '''
-          # If .env doesn’t exist, create a new clean one
           if [ ! -f .env ]; then
             echo "Creating fresh .env file..."
             cat <<EOF > .env
@@ -36,12 +34,11 @@ WEB_PORT=8080
 EOF
           fi
 
-          # Remove any invalid lines (just in case)
-          sed -i '/^$/d' .env                # Remove empty lines
-          sed -i '/^#/d' .env                # Remove comments
-          sed -i '/echo/d' .env              # Remove echo lines
-          sed -i '/EOF/d' .env               # Remove stray EOF
-          sed -i '/cat/d' .env               # Remove cat commands
+          sed -i '/^$/d' .env
+          sed -i '/^#/d' .env
+          sed -i '/echo/d' .env
+          sed -i '/EOF/d' .env
+          sed -i '/cat/d' .env
 
           echo "✅ Cleaned .env file:"
           cat .env
@@ -56,7 +53,6 @@ EOF
           docker compose pull || true
           docker compose down --remove-orphans || true
           docker compose up -d
-
           echo "⏳ Waiting 5 seconds for containers to initialize..."
           sleep 5
           docker compose ps
