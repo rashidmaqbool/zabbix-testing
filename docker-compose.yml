@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
@@ -18,7 +16,7 @@ services:
     depends_on:
       - db
     ports:
-      - "${WEB_PORT:-8081}:80"               # Changed host port to 8081 to avoid Jenkins conflict
+      - "${WEB_PORT:-808}:80"                  # Changed host port to 808
       - "${SIP_PORT:-5060}:${SIP_PORT:-5060}/udp"
       - "${SIP_PORT:-5060}:${SIP_PORT:-5060}/tcp"
       - "${RTP_START:-20000}-${RTP_END:-21000}:${RTP_START:-20000}-${RTP_END:-21000}/udp"
@@ -42,8 +40,8 @@ services:
     image: jenkins/jenkins:lts
     container_name: jenkins
     ports:
-      - "8080:8080"   # Jenkins web interface
-      - "50000:50000" # Jenkins agent communication
+      - "8080:8080"
+      - "50000:50000"
     volumes:
       - jenkins_home:/var/jenkins_home
     restart: unless-stopped
