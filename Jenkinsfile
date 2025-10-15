@@ -5,8 +5,8 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 echo 'Cloning GitHub repository...'
-                // Replace with your repo URL; Jenkins will use stored credentials
-                git url: 'https://github.com/rashidmaqbool/zabbix-testing.git', branch: 'main'
+                // Jenkins will automatically use the token stored in credentials
+                git url: 'https://github.com/rashidmaqbool/mikopbx-docker.git', branch: 'main'
             }
         }
 
