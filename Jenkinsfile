@@ -2,16 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Clone Repository') {
-            steps {
-                echo 'Cloning GitHub repository using Jenkins token...'
-                git(
-                    url: 'https://github.com/rashidmaqbool/zabbix-testing.git',
-                    branch: 'main',
-                    credentialsId: 'github-token' // <-- Use the Jenkins credential ID of your PAT
-                )
-            }
-        }
+     
 
         stage('Deploy MikoPBX Container') {
             steps {
