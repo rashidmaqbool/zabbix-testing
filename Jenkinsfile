@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Docker image and container name
         DOCKER_IMAGE = 'mikopbx:latest'
         CONTAINER_NAME = 'MikoPBX'
     }
@@ -14,7 +13,7 @@ pipeline {
                 git(
                     url: 'https://github.com/rashidmaqbool/zabbix-testing.git',
                     branch: 'main',
-                    credentialsId: 'github-token'  // Replace with your Jenkins GitHub token ID
+                    credentialsId: 'github-token'
                 )
             }
         }
@@ -22,31 +21,24 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo "Building Docker image..."
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE} ."
-                }
+                sh "docker build -t ${DOCKER_IMAGE} ."
             }
         }
 
         stage('Deploy MikoPBX Container') {
             steps {
                 echo "Deploying MikoPBX container..."
-                script {
-                    // Stop and remove any existing container
-                    sh """
-                    docker rm -f ${CONTAINER_NAME} || true
-                    docker run -d --name ${CONTAINER_NAME} -p 8080:80 ${DOCKER_IMAGE}
-                    """
-                }
+                sh """
+                docker rm -f ${CONTAINER_NAME} || true
+                docker run -d --name ${CONTAINER_NAME} -p 8080:80 ${DOCKER_IMAGE}
+                """
             }
         }
 
         stage('Verify Deployment') {
             steps {
                 echo "Verifying container is running..."
-                script {
-                    sh "docker ps | grep ${CONTAINER_NAME}"
-                }
+                sh "docker ps | grep ${CONTAINER_NAME}"
             }
         }
     }
