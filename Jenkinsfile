@@ -19,42 +19,42 @@ pipeline {
       }
     }
 
-    stage('Prepare .env') {
+    stage('Prepare Environment') {
       steps {
-        echo "⚙️ Preparing .env file..."
+        echo "⚙️ Preparing environment variables..."
         sh '''
-          if [ ! -f .env ]; then
-            echo "Creating fresh .env file..."
-            cat <<EOF > .env
-ID_WWW_USER=0
-ID_WWW_GROUP=0
-PROJECT_NAME=Zabbix-in-Docker
-DB_PORT=5432
-WEB_PORT=8080
-EOF
-          fi
+          echo "Current environment file:"
+          cat .env || echo ".env not found!"
 
-          sed -i '/^$/d' .env
-          sed -i '/^#/d' .env
-          sed -i '/echo/d' .env
-          sed -i '/EOF/d' .env
-          sed -i '/cat/d' .env
+          # Ensure valid RTP range to avoid port conflicts
+          sed -i 's/^RTP_START=.*/RTP_START=20000/' .env
+          sed -i 's/^RTP_END=.*/RTP_END=21000/' .env
 
-          echo "✅ Cleaned .env file:"
+          echo "✅ Updated .env file:"
           cat .env
         '''
       }
     }
 
-    stage('Deploy') {
+    stage('Cleanup old containers') {
       steps {
-        echo "🚀 Deploying Zabbix..."
+        echo "🧹 Cleaning up old containers..."
+        sh '''
+          docker compose down --remove-orphans || true
+          docker container prune -f || true
+          docker network prune -f || true
+        '''
+      }
+    }
+
+    stage('Deploy MikoPBX') {
+      steps {
+        echo "🚀 Deploying MikoPBX..."
         sh '''
           docker compose pull || true
-          docker compose down --remove-orphans || true
           docker compose up -d
-          echo "⏳ Waiting 5 seconds for containers to initialize..."
-          sleep 5
+          echo "⏳ Waiting 10 seconds for containers to initialize..."
+          sleep 10
           docker compose ps
         '''
       }
@@ -62,14 +62,14 @@ EOF
 
     stage('Health Check') {
       steps {
-        echo "🩺 Checking if container is running..."
+        echo "🩺 Checking if MikoPBX is running..."
         sh '''
-          if [ "$(docker ps -q -f name=zabbix)" = "" ]; then
-            echo "❌ Zabbix container not running. Dumping logs..."
+          if [ "$(docker ps -q -f name=mikopbx_app)" = "" ]; then
+            echo "❌ MikoPBX container not running. Dumping logs..."
             docker compose logs --no-color --tail=100
             exit 1
           else
-            echo "✅ Zabbix container is running successfully."
+            echo "✅ MikoPBX container is running successfully."
           fi
         '''
       }
