@@ -1,5 +1,11 @@
 pipeline {
-  agent any
+  agent {
+    docker {
+      // Use an image that already has Docker CLI and Compose installed
+      image 'docker:27.1.1-dind'
+      args '--privileged -v /var/run/docker.sock:/var/run/docker.sock'
+    }
+  }
 
   environment {
     COMPOSE_PROJECT_NAME = 'mikopbx'
