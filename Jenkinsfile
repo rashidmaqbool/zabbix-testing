@@ -1,8 +1,21 @@
 pipeline {
     agent any
 
+    environment {
+        // No need to define GitHub token here; credentialsId will handle it
+    }
+
     stages {
-    
+        stage('Clone Repository') {
+            steps {
+                echo 'Cloning GitHub repository using Jenkins token...'
+                git(
+                    url: 'https://github.com/rashidmaqbool/mikopbx-docker.git',
+                    branch: 'main',
+                    credentialsId: 'github-token' // <-- Use the Jenkins credential ID of your PAT
+                )
+            }
+        }
 
         stage('Deploy MikoPBX Container') {
             steps {
