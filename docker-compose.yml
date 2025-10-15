@@ -14,7 +14,7 @@ services:
 
   mikopbx:
     image: ${MIKO_IMAGE}
-    container_name: mikopbx
+    container_name: zabbix/zabbix-server-pgsql:latest
     depends_on:
       - db
     ports:
