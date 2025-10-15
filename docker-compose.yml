@@ -16,7 +16,7 @@ services:
     depends_on:
       - db
     ports:
-      - "${WEB_PORT:-808}:80"                  # Changed host port to 808
+      - "${WEB_PORT:-808}:80"
       - "${SIP_PORT:-5060}:${SIP_PORT:-5060}/udp"
       - "${SIP_PORT:-5060}:${SIP_PORT:-5060}/tcp"
       - "${RTP_START:-20000}-${RTP_END:-21000}:${RTP_START:-20000}-${RTP_END:-21000}/udp"
@@ -36,16 +36,5 @@ services:
       - NET_ADMIN
     restart: unless-stopped
 
-  jenkins:
-    image: jenkins/jenkins:lts
-    container_name: jenkins
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-    restart: unless-stopped
-
 volumes:
   db-data:
-  jenkins_home:
